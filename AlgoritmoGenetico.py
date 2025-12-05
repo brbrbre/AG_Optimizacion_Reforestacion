@@ -712,26 +712,38 @@ def genetic_algorithm_polygon(
         population.append(indiv)
 
     best_individual = None
-    best_fitness = float("-inf")
+    best_fitness = float("-inf")  # fitness ya desplazado (positivo)
     best_history = []
 
     for _gen in range(generations):
-        fitness_vals = []
+        raw_fitness_vals = []
+
+        # 1) Calculamos fitness crudo para toda la población
         for indiv in population:
-            fit = evaluate_fitness(
+            raw_fit = evaluate_fitness(
                 genes=indiv,
                 species_list=species,
                 neighbors=neighbors,
                 theta_dict=theta,
                 target_counts=target_counts,
             )
-            fitness_vals.append(fit)
+            raw_fitness_vals.append(raw_fit)
+
+        # 2) Desplazamos para que el mínimo sea 1
+        min_raw = min(raw_fitness_vals)
+        shift = -min_raw + 1 if min_raw <= 0 else 0.0
+
+        fitness_vals = [rf + shift for rf in raw_fitness_vals]
+
+        # 3) Actualizamos mejor individuo con el fitness ya desplazado
+        for indiv, fit in zip(population, fitness_vals):
             if fit > best_fitness:
                 best_fitness = fit
                 best_individual = indiv.copy()
 
         best_history.append(best_fitness)
 
+        # 4) Elitismo y reproducción usando fitness_vals (ya positivos)
         new_pop: List[List[str]] = [best_individual.copy()]
 
         while len(new_pop) < pop_size:
